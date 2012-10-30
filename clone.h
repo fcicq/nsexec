@@ -31,6 +31,10 @@
 
 #endif /* HAVE_UNSHARE */
 
+#ifndef CLONE_NEWNS
+#define CLONE_NEWNS	0x00020000	/* New namespace group? */
+#endif
+
 #ifndef CLONE_NEWUTS
 #define CLONE_NEWUTS		0x04000000
 #endif

@@ -25,7 +25,7 @@ all:
 
 include $(addsuffix /module.mk,$(modules))
 
-progs += ns_exec
+progs += nsexec uidmap newuidshell uidmapshift usernstest
 
 .PHONY: all
 all: $(progs)
@@ -36,6 +36,11 @@ libs: $(libs)
 .PHONY: clean
 clean:
 	$(RM) $(objects) $(progs) $(libs) $(extra_clean)
+
+.PHONY: install
+install:
+	@cp nsexec uidmap uidmapshift newuidshell usernstest "$(DESTDIR)/usr/bin"
+	@chmod u+s ${DESTDIR}${PREFIX}/usr/bin/uidmap
 
 .PHONY: testclean
 testclean:
