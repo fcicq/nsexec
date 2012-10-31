@@ -39,7 +39,7 @@ clean:
 
 .PHONY: install
 install:
-	@cp nsexec uidmap uidmapshift newuidshell usernstest "$(DESTDIR)/usr/bin"
+	@cp container-userns-convert nsexec uidmap uidmapshift newuidshell usernstest "$(DESTDIR)/usr/bin"
 	@chmod u+s ${DESTDIR}${PREFIX}/usr/bin/uidmap
 
 .PHONY: testclean

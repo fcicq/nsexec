@@ -1,3 +1,10 @@
+nsexec (1.0-11) quantal; urgency=low
+
+  * rename convert_container to container-userns-convert, and have Makefile
+    install it to /usr/bin.
+
+ -- Serge Hallyn <serge.hallyn@ubuntu.com>  Wed, 31 Oct 2012 05:39:11 +0100
+
 nsexec (1.0-10) quantal; urgency=low
 
   * Restore suid and sgid after chowning in uidmapshift.
