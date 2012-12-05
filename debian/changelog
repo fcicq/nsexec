@@ -1,3 +1,9 @@
+nsexec (1.0-11.13.04.1) raring; urgency=low
+
+  * build for raring
+
+ -- Serge Hallyn <serge.hallyn@ubuntu.com>  Tue, 04 Dec 2012 21:11:17 -0600
+
 nsexec (1.0-11) quantal; urgency=low
 
   * rename convert_container to container-userns-convert, and have Makefile
