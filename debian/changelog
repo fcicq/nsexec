@@ -1,4 +1,4 @@
-nsexec (1.0-13) raring; urgency=low
+nsexec (1.13) raring; urgency=low
 
   * uidmapshift: use lchmod in place of chmod, make less verbose, add DEBUG
     compile time option, and fix up wrong variable names.
