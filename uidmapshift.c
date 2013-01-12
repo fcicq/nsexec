@@ -18,7 +18,9 @@ void usage(char *me)
 
 int convert_uids = 0, convert_gids = 0;
 
-int convert(char *base, int h, int ns, int r)
+//#define DEBUG 1
+
+int convert(char *base, int nsuid, int hostid, int r)
 {
 	int ret;
 	struct stat mystat;
@@ -32,16 +34,19 @@ int convert(char *base, int h, int ns, int r)
 	u = mystat.st_uid;
 	g = mystat.st_gid;
 
-	if (convert_uids && u >= h && u < h+r) {
-		ret = chown(base, (u-h) + ns, -1);
+#if DEBUG
+	fprintf(stderr, "mode on %s is %o\n", base, mystat.st_mode);
+#endif
+	if (convert_uids && u >= nsuid && u < nsuid+r) {
+		ret = lchown(base, (u-nsuid) + hostid, -1);
 		if (ret) {
 			fprintf(stderr, "failed to chown %s\n", base);
 			/* well, let's keep going */
 		}
 		converted = 1;
 	}
-	if (convert_gids && g >= h && g < g+r) {
-		ret = chown(base, -1, (g-h) + ns);
+	if (convert_gids && g >= nsuid && g < g+r) {
+		ret = lchown(base, -1, (g-nsuid) + hostid);
 		if (ret) {
 			fprintf(stderr, "failed to chgrp %s\n", base);
 			/* well, let's keep going */
@@ -49,8 +54,10 @@ int convert(char *base, int h, int ns, int r)
 		converted = 1;
 	}
 
-	if (converted) {
-		fprintf(stderr, "resetting mode on %s\n", base);
+	if (converted && !S_ISLNK(mystat.st_mode)) {
+#if DEBUG
+		fprintf(stderr, "resetting mode on %s to %o\n", base, mystat.st_mode);
+#endif
 		ret = chmod(base, mystat.st_mode);
 		if (ret) {
 			fprintf(stderr, "failed to reset st_mode on %s\n", base);
@@ -61,7 +68,7 @@ int convert(char *base, int h, int ns, int r)
 }
 
 #define GUESS 256
-int recursive_convert(char *base, int h, int ns, int r)
+int recursive_convert(char *base, int nsuid, int hostid, int r)
 {
 	char *pathname;
 	struct dirent dirent, *direntp;
@@ -112,39 +119,15 @@ int recursive_convert(char *base, int h, int ns, int r)
 		ret = lstat(pathname, &mystat);
 		if (ret)
 			continue;
-		printf("path %s stat is: isdir %s islnk %s mode %d\n", pathname,
-				S_ISDIR(mystat.st_mode) ? "true" : "false",
-				S_ISLNK(mystat.st_mode) ? "true" : "false",
-				mystat.st_mode);
 		if (S_ISDIR(mystat.st_mode) && !S_ISLNK(mystat.st_mode))
-			recursive_convert(pathname, h, ns, r);
-		u = mystat.st_uid;
-		g = mystat.st_gid;
-		converted = 0;
-		if (convert_uids && u >= h && u < h+r) {
-			printf("chowning %s\n", pathname);
-			ret = chown(pathname, (u-h) + ns, -1);
-			if (ret) {
-				fprintf(stderr, "failed to chown %s\n", pathname);
-				/* well, let's keep going */
-			}
-			converted = 1;
-		}
-		if (convert_gids && g >= h && g < h+r) {
-			printf("chgrping %s\n", pathname);
-			ret = chown(pathname, -1, (g-h) + ns);
-			if (ret) {
-				fprintf(stderr, "failed to chgrp %s\n", pathname);
-				/* well, let's keep going */
-			}
-			converted = 1;
-		}
-		if (converted) {
-			fprintf(stderr, "resetting mode on %s\n", pathname);
-			ret = chmod(pathname, mystat.st_mode);
-			if (ret) {
-				fprintf(stderr, "failed to reset st_mode on %s\n", pathname);
-				/* well, let's keep going */
+			recursive_convert(pathname, nsuid, hostid, r);
+		convert(pathname, nsuid, hostid, r);
+		{
+			struct stat mystat;
+			lstat("/var/lib/lxc/r2/rootfs/usr/bin/sudo", &mystat);
+			if (!(S_ISUID & mystat.st_mode)) {
+				printf("at %s after %s: sudo is not suid root\n", base, pathname);
+				exit(1);
 			}
 		}
 	}
@@ -158,7 +141,9 @@ int recursive_convert(char *base, int h, int ns, int r)
 int main(int argc, char *argv[])
 {
 	char *base;
-	int huid, nsuid, range;
+	int nsuid,  // uid to use in namespace
+	    hostid,  // uid to map to on host
+	    range;
 	int ret;
 
 	if (argc < 6 || strcmp(argv[1], "-h") == 0 ||
@@ -172,12 +157,12 @@ int main(int argc, char *argv[])
 	case 'b': convert_uids = convert_gids = 1; break;
 	default: usage(argv[0]);
 	}
-	huid = atoi(argv[3]);
-	nsuid = atoi(argv[4]);
+	nsuid = atoi(argv[3]);
+	hostid = atoi(argv[4]);
 	range = atoi(argv[5]);
 
-	ret = recursive_convert(base, huid, nsuid, range);
+	ret = recursive_convert(base, nsuid, hostid, range);
 	if (ret)
 		return ret;
-	return convert(base, huid, nsuid, range);
+	return convert(base, nsuid, hostid, range);
 }

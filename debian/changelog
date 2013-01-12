@@ -1,3 +1,10 @@
+nsexec (1.0-13) raring; urgency=low
+
+  * uidmapshift: use lchmod in place of chmod, make less verbose, add DEBUG
+    compile time option, and fix up wrong variable names.
+
+ -- Serge Hallyn <serge.hallyn@ubuntu.com>  Fri, 11 Jan 2013 20:56:07 -0600
+
 nsexec (1.0-12) raring; urgency=low
 
   * build for raring
