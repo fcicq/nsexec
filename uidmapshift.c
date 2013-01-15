@@ -122,14 +122,6 @@ int recursive_convert(char *base, int nsuid, int hostid, int r)
 		if (S_ISDIR(mystat.st_mode) && !S_ISLNK(mystat.st_mode))
 			recursive_convert(pathname, nsuid, hostid, r);
 		convert(pathname, nsuid, hostid, r);
-		{
-			struct stat mystat;
-			lstat("/var/lib/lxc/r2/rootfs/usr/bin/sudo", &mystat);
-			if (!(S_ISUID & mystat.st_mode)) {
-				printf("at %s after %s: sudo is not suid root\n", base, pathname);
-				exit(1);
-			}
-		}
 	}
 
 	if (pathname)

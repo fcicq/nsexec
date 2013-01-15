@@ -1,3 +1,9 @@
+nsexec (1.14) raring; urgency=low
+
+  * Remove debugging code accidentally left in.
+
+ -- Serge Hallyn <serge.hallyn@ubuntu.com>  Tue, 15 Jan 2013 10:40:18 -0600
+
 nsexec (1.13) raring; urgency=low
 
   * uidmapshift: use lchmod in place of chmod, make less verbose, add DEBUG
