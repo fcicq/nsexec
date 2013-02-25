@@ -1,3 +1,10 @@
+nsexec (1.15) raring; urgency=low
+
+  * Apply patch from Dwight to use nftw in uidmapshift (and other
+    improvements).
+
+ -- Serge Hallyn <serge.hallyn@ubuntu.com>  Mon, 25 Feb 2013 15:00:30 -0600
+
 nsexec (1.14) raring; urgency=low
 
   * Remove debugging code accidentally left in.
