@@ -27,13 +27,13 @@ void usage(void)
 {
 	extern const char *__progname;
 	printf("Usage: %s [OPTIONS] directory [src dst range]\n\n", __progname);
-	printf("  -u, --uid <src dst range>      convert uids in directory\n");
-	printf("  -g, --gid <src dst range>      convert gids in directory\n");
-	printf("  -b, --both <src dst range>     convert uids and gids in directory\n");
+	printf("  -u, --uid                      convert uids in directory\n");
+	printf("  -g, --gid                      convert gids in directory\n");
+	printf("  -b, --both                     convert uids and gids in directory\n");
 	printf("  -r, --range                    find min,max uid/gid used in directory\n");
 	printf("  -v, --verbose                  increate verbosity\n\n");
 	printf("Note this program always recursively walks all of directory.\n");
-	printf("The -u,-g, and -b options require a [src dst range], to convert the\n");
+	printf("If -u,-g, or -b is given, then [src dst range] are required to convert the \n");
 	printf("ids within the range [src..src+range] to [dst..dst+range].\n\n");
 	printf("Examples:\n");
 	printf("  %s -r /path/to/directory                # show min/max uid/gid\n", __progname);
