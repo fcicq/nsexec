@@ -58,7 +58,7 @@ lxc.id_map = U ${uid} 0 $range
 lxc.id_map = G ${uid} 0 $range
 EOF
 
-uidmapshift /var/lib/lxc/$container/rootfs b 0 $uid $range
+uidmapshift -b /var/lib/lxc/$container/rootfs 0 $uid $range
 
 echo "Container $container has been converted"
 exit 0
