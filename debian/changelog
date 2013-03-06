@@ -1,6 +1,8 @@
 nsexec (1.16) raring; urgency=low
 
   * Update container-userns-convert to use new uidmapshift semantics.
+  * add usernsselfmap program to demonstrate creating a user ns completely
+    without privilege (only mapping uid 0 in container to your host uid).
 
  -- Serge Hallyn <serge.hallyn@ubuntu.com>  Wed, 06 Mar 2013 14:56:56 -0600
 

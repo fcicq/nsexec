@@ -25,7 +25,7 @@ all:
 
 include $(addsuffix /module.mk,$(modules))
 
-progs += nsexec uidmap newuidshell uidmapshift usernstest
+progs += nsexec uidmap newuidshell uidmapshift usernstest usernsselfmap
 
 .PHONY: all
 all: $(progs)
@@ -39,7 +39,7 @@ clean:
 
 .PHONY: install
 install:
-	@cp container-userns-convert nsexec uidmap uidmapshift newuidshell usernstest "$(DESTDIR)/usr/bin"
+	@cp container-userns-convert nsexec uidmap uidmapshift newuidshell usernstest usernsselfmap "$(DESTDIR)/usr/bin"
 	@chmod u+s ${DESTDIR}${PREFIX}/usr/bin/uidmap
 
 .PHONY: testclean
