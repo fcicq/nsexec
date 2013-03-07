@@ -41,6 +41,9 @@ static void usage(const char *name)
 	printf("  -p		pid namespace\n");
 	printf("  -f <flag>	extra clone flags\n");
 	printf("  -e		return child's error status\n");
+	printf("  -W		wait to exec the child\n");
+    printf("  -s <uid>  setuid to userid\n");
+    printf("  -S <uid>  setgid to userid\n");
 	printf("\n");
 	printf("(C) Copyright IBM Corp. 2006\n");
 	printf("\n");
@@ -115,11 +118,11 @@ int load_cgroup_dir(char *dest, int len)
 {
 	FILE *f = fopen("/proc/mounts", "r");
 	char buf[200];
-	char *name, *path, *fsname, *options, *p1, *p2, *s;
+	char *path, *fsname, *options, *p1, *p2, *s;
 	if (!f)
 		return 0;
 	while (fgets(buf, 200, f)) {
-		name = strtok_r(buf, " ", &p1);
+		path = strtok_r(buf, " ", &p1);
 		path = strtok_r(NULL, " ", &p1);
 		fsname = strtok_r(NULL, " ", &p1);
 		options = strtok_r(NULL, " ", &p1);
@@ -188,12 +191,33 @@ int check_newcgrp(void)
 	return 0;
 }
 
+int wait_for_exec;
+int newuid = -1, newgid = -1;
+
 int do_child(void *vargv)
 {
 	char **argv = (char **)vargv;
 
 	if (check_newcgrp())
 		return 1;
+
+    if (wait_for_exec) {
+        printf("Press any key to exec (I am %d)\n", getpid());
+        (void)getchar();
+    }
+
+    if (newgid != -1) {
+        if (setgid(newgid) < 0) {
+            perror("setgid");
+            exit(1);
+        }
+    }
+    if (newuid != -1) {
+        if (setuid(newuid) < 0) {
+            perror("setuid");
+            exit(1);
+        }
+    }
 
 	execve(argv[0], argv, __environ);
 	perror("execve");
@@ -226,13 +250,14 @@ int main(int argc, char *argv[])
 	int ret, use_clone = 0, ret_child_err = 0;
 	int pid;
 	char *pid_file = NULL;
+    char *default_args[] = {"/bin/sh", NULL};
 
 	procname = basename(argv[0]);
 
 	memset(ttyname, '\0', sizeof(ttyname));
 	readlink("/proc/self/fd/0", ttyname, sizeof(ttyname));
 
-	while ((c = getopt(argc, argv, "+meguUiphcnf:P:")) != EOF) {
+	while ((c = getopt(argc, argv, "+meguUiphcnf:P:Ws:S:")) != EOF) {
 		switch (c) {
 		case 'g': do_newcgrp = getpid();		break;
 		case 'm': flags |= CLONE_NEWNS;			break;
@@ -244,6 +269,9 @@ int main(int argc, char *argv[])
 		case 'U': flags |= CLONE_NEWUSER;		break;
 		case 'n': flags |= CLONE_NEWNET;		break;
 		case 'p': flags |= CLONE_NEWNS|CLONE_NEWPID;	break;
+		case 'W': wait_for_exec = 1;            break;
+		case 's': newuid = atoi(optarg);        break;
+		case 'S': newgid = atoi(optarg);        break;
 		case 'f': if (!string_to_ul(optarg, &eflags)) {
 				flags |= eflags;
 				break;
@@ -256,6 +284,10 @@ int main(int argc, char *argv[])
 
 	argv = &argv[optind];
 	argc = argc - optind;	
+    if (argc < 1) {
+        argv = default_args;
+        argc = 1;
+    }
 	
 	if (do_newcgrp) {
 		ret = pipe(pipefd);
@@ -266,10 +298,19 @@ int main(int argc, char *argv[])
 		do_newcgrp = pipefd[0];
 	}
 
+    if ((flags & CLONE_NEWUSER) && !wait_for_exec) {
+        printf("It is recommended to use wait_for_exec with -U.  Once you\n");
+        printf("exec, you lose privileges in the new user namespace and can\n");
+        printf("no longer su.\n");
+    }
+
 	if (use_clone) {
 		int stacksize = 4*getpagesize();
 		void *childstack, *stack = malloc(stacksize);
 
+        if (wait_for_exec) {
+            printf("Can't use wait_for_exec with clone.  Ignoring it\n");
+        }
 		if (!stack) {
 			perror("malloc");
 			return -1;
