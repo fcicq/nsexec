@@ -4,12 +4,10 @@
 #include <stdlib.h>
 #include <errno.h>
 
-int writemaps(pid_t pid)
+int writemaps(pid_t pid, int origuid, int origgid)
 {
 	FILE *fout;
 	char path[1024];
-	int origuid = getuid();
-	int origgid = getgid();
 	int ret;
 
 	printf("starting from uid %d gid %d\n", origuid, origgid);
@@ -45,57 +43,20 @@ int writemaps(pid_t pid)
 int main(int argc, char *argv[])
 {
 	char *args[] = { "/bin/bash", NULL };
-	int ret, fromchildpipe[2], tochildpipe[2];
-	pid_t pid;
+	int ret;
+	int origuid = getuid();
+	int origgid = getgid();
 
-	ret = pipe(fromchildpipe);
-	if (ret < 0)
-		exit(1);
-	ret = pipe(tochildpipe);
-	if (ret < 0)
-		exit(1);
-
-	pid = fork();
-	if (pid < 0)
-		exit(1);
-	int x = 0;
-
-	if (pid > 0) {
-		int status;
-
-		close(fromchildpipe[1]);
-		close(tochildpipe[0]);
-		read(fromchildpipe[0], &x, sizeof(x));
-		if (x == 1)
-			exit(1);
-		close(fromchildpipe[0]);
-		ret = writemaps(pid);
-		if (ret < 0) {
-			printf("Error writing maps for %d\n", pid);
-			x = 1;
-		}
-		write(tochildpipe[1], &x, sizeof(x));
-		close(tochildpipe[1]);
-		waitpid(pid, &status, __WALL);
-		exit(x);
-	}
-	close(fromchildpipe[0]);
-	close(tochildpipe[1]);
 	ret = unshare(CLONE_NEWUSER);
+	ret = writemaps(getpid(), origuid, origgid);
+	if (ret < 0) {
+		printf("Error writing maps\n");
+		exit(1);
+	}
 	if (ret < 0) {
 		perror("unshare");
-		x = 1;
-		write(fromchildpipe[1], &x, sizeof(x));
 		exit(1);
 	}
-	write(fromchildpipe[1], &x, sizeof(x));
-	read(tochildpipe[0], &x, sizeof(x));
-	if (x == 1) {
-		printf("error in parent writing uid maps\n");
-		exit(1);
-	}
-	close(fromchildpipe[1]);
-	close(tochildpipe[0]);
 	ret = setgid(0);
 	if (ret < 0)
 		perror("setgid");
