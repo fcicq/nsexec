@@ -1,8 +1,9 @@
-nsexec (1.18) UNRELEASED; urgency=low
+nsexec (1.18) raring; urgency=low
 
   * cleaner simpler version nof usernsselfmap.
+  * add options to nsexec to make it more useful for user namespaces.
 
- -- Serge Hallyn <serge.hallyn@ubuntu.com>  Wed, 06 Mar 2013 21:54:08 -0600
+ -- Serge Hallyn <serge.hallyn@ubuntu.com>  Thu, 07 Mar 2013 14:40:16 -0600
 
 nsexec (1.17) raring; urgency=low
 
