@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #define _GNU_SOURCE
@@ -7,6 +8,12 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <signal.h>
+#include <string.h>
+
+int unshare(int flags);
+int clone(int (*fn)(void *), void *child_stack,
+        int flags, void *arg, ...
+        /* pid_t *ptid, struct user_desc *tls, pid_t *ctid */ );
 
 #ifndef CLONE_NEWUSER
 #define CLONE_NEWUSER		0x10000000	/* New user namespace */
@@ -150,6 +157,8 @@ int main(int argc, char *argv[])
     writesync(tochild); // sync 2
     readsync(fromchild); // sync 3
     ret = stat("/tmp/.usernstest1234", &mystat);
+    if (ret < 0)
+        perror("stat");
     myassert(mystat.st_uid == mapped, "parent sees wrong uid on child file\n");
     signal(SIGUSR1, sighandler);
     writesync(tochild); // sync 4

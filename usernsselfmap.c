@@ -3,6 +3,9 @@
 #include <linux/sched.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <unistd.h>
+
+int unshare(int flags);
 
 int writemaps(pid_t pid, int origuid, int origgid)
 {
@@ -64,4 +67,5 @@ int main(int argc, char *argv[])
 		perror("setuid");
 	printf("execing bash (I am  now %d %d)\n", getuid(), getgid());
 	execv(args[0], args);
+    exit(1);
 }

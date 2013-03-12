@@ -17,6 +17,11 @@
 #include <sys/wait.h>
 
 #include "clone.h"
+int unshare(int flags);
+int clone(int (*fn)(void *), void *child_stack,
+        int flags, void *arg, ...
+        /* pid_t *ptid, struct user_desc *tls, pid_t *ctid */ );
+
 
 extern pid_t getpgid(pid_t pid);
 extern pid_t getsid(pid_t pid);
