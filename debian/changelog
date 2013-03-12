@@ -1,3 +1,9 @@
+nsexec (1.19) raring; urgency=low
+
+  * add usernsexec program
+
+ -- Serge Hallyn <serge.hallyn@ubuntu.com>  Tue, 12 Mar 2013 11:05:00 -0500
+
 nsexec (1.18) raring; urgency=low
 
   * cleaner simpler version nof usernsselfmap.
