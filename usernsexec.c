@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sched.h>
+#include <pwd.h>
 
 #include "clone.h"
 int unshare(int flags);
@@ -99,14 +100,23 @@ struct id_map {
 	struct id_map *next;
 };
 
+struct id_map default_map = {
+	.which = 'b',
+	.host_id = 100000,
+	.ns_id = 0,
+	.range = 10000,
+};
+static struct id_map *active_map = &default_map;
+
 /*
  * given a string like "b:0:100000:10", map both uids and gids
  * 0-10 to 100000 to 100010
  */
 static int parse_map(char *map)
 {
-	char *e;
 	struct id_map *newmap;
+    int ret;
+
 	if (!map)
 		return -1;
 	newmap = malloc(sizeof(*newmap));
@@ -134,13 +144,13 @@ out_free_map:
  * allowed map.  We only use the first one (bc otherwise we're
  * not sure which ns ids he wants to use).
  */
-static int find_default_map(char *fnam, char which, char *username)
+static int read_default_map(char *fnam, char which, char *username)
 {
 	FILE *fin;
 	char *line = NULL;
 	size_t sz = 0;
-	char mapline[1024];
 	struct id_map *newmap;
+    char *p1, *p2;
 
 	fin = fopen(fnam, "r");
 	if (!fin)
@@ -187,15 +197,8 @@ static int find_default_map(void)
 		return -1;
 	if (read_default_map(subgidfile, 'g', p->pw_name) < 0)
 		return -1;
+    return 0;
 }
-
-struct id_map default_map = {
-	.which = 'b',
-	.host_id = 100000,
-	.ns_id = 0,
-	.range = 10000,
-};
-static struct id_map *active_map = &default_map;
 
 static int run_cmd(char **argv)
 {
@@ -250,9 +253,9 @@ static int map_child_uids(int pid, struct id_map *map)
 			uidargs[nuargs - 1] = malloc(21);
 			if (!uidargs[nuargs-3] || !uidargs[nuargs-2] || !uidargs[nuargs-1])
 				return -1;
-			sprintf(uidargs[nuargs - 3], "%d", m->ns_id);
-			sprintf(uidargs[nuargs - 2], "%d", m->host_id);
-			sprintf(uidargs[nuargs - 1], "%d", m->range);
+			sprintf(uidargs[nuargs - 3], "%ld", m->ns_id);
+			sprintf(uidargs[nuargs - 2], "%ld", m->host_id);
+			sprintf(uidargs[nuargs - 1], "%ld", m->range);
 			uidargs[nuargs] = NULL;
 		}
 		if (m->which == 'b' || m->which == 'g') {
@@ -265,9 +268,9 @@ static int map_child_uids(int pid, struct id_map *map)
 			gidargs[ngargs - 1] = malloc(21);
 			if (!gidargs[ngargs-3] || !gidargs[ngargs-2] || !gidargs[ngargs-1])
 				return -1;
-			sprintf(gidargs[ngargs - 3], "%d", m->ns_id);
-			sprintf(gidargs[ngargs - 2], "%d", m->host_id);
-			sprintf(gidargs[ngargs - 1], "%d", m->range);
+			sprintf(gidargs[ngargs - 3], "%ld", m->ns_id);
+			sprintf(gidargs[ngargs - 2], "%ld", m->host_id);
+			sprintf(gidargs[ngargs - 1], "%ld", m->range);
 			gidargs[ngargs] = NULL;
 		}
 	}
