@@ -31,6 +31,14 @@ static void usage(const char *name)
 	printf("\n");
 	printf("  -m <uid-maps> uid maps to use\n");
 	printf("\n");
+	printf("  uid-maps: [u|g|b]:ns_id:host_id:range\n");
+	printf("            [u|g|b]: map user id, group id, or both\n");
+	printf("            ns_id: the base id in the new namespace\n");
+	printf("            host_id: the base id in the parent namespace\n");
+	printf("            range: how many ids to map\n");
+	printf("  Note: This program uses newuidmap(2) and newgidmap(2).\n");
+	printf("        As such, /etc/subuid and /etc/subgid must grant the\n");
+	printf("        calling user permission to use the mapped ranges\n");
 	exit(1);
 }
 
@@ -85,28 +93,100 @@ static int do_child(void *vargv)
 	return -1;
 }
 
-/*
- * given a string like "b:0:100000:10", map both uids and gids
- * 0-10 to 100000 to 100010
- */
-static void parse_map(char *map)
-{
-	// not yet implemented
-}
-
 struct id_map {
 	char which; // b or u or g
-	int host_id, ns_id, range;
+	long host_id, ns_id, range;
 	struct id_map *next;
 };
 
 /*
- * go through /etc/subuids and /etc/subgids to find this user's
- * allowed maps
+ * given a string like "b:0:100000:10", map both uids and gids
+ * 0-10 to 100000 to 100010
  */
-static void find_default_map(void)
+static int parse_map(char *map)
 {
-	// not yet implemented.
+	char *e;
+	struct id_map *newmap;
+	if (!map)
+		return -1;
+	newmap = malloc(sizeof(*newmap));
+	if (!newmap)
+		return -1;
+	ret = sscanf(map, "%c:%ld:%ld:%ld", &newmap->which, &newmap->ns_id, &newmap->host_id, &newmap->range);
+	if (ret != 4)
+		goto out_free_map;
+	if (newmap->which != 'b' && newmap->which != 'u' && newmap->which != 'g')
+		goto out_free_map;
+	if (active_map != &default_map)
+		newmap->next = active_map;
+	else
+		newmap->next = NULL;
+	active_map = newmap;
+	return 0;
+
+out_free_map:
+	free(newmap);
+	return -1;
+}
+
+/*
+ * go through /etc/subuids and /etc/subgids to find this user's
+ * allowed map.  We only use the first one (bc otherwise we're
+ * not sure which ns ids he wants to use).
+ */
+static int find_default_map(char *fnam, char which, char *username)
+{
+	FILE *fin;
+	char *line = NULL;
+	size_t sz = 0;
+	char mapline[1024];
+	struct id_map *newmap;
+
+	fin = fopen(fnam, "r");
+	if (!fin)
+		return -1;
+	while (getline(&line, &sz, fin) != -1) {
+		if (sz <= strlen(username) ||
+		    strncmp(line, username, strlen(username)) != 0 ||
+		    line[strlen(username)] != ':')
+			continue;
+		p1 = index(line, ':');
+		if (!p1)
+			continue;
+		p2 = index(p1+1, ':');
+		if (!p2)
+			continue;
+		newmap = malloc(sizeof(*newmap));
+		if (!newmap)
+			return -1;
+		newmap->host_id = atol(p1+1);
+		newmap->range = atol(p2+1);
+		newmap->ns_id = 0;
+		newmap->which = which;
+		if (active_map != &default_map)
+			newmap->next = active_map;
+		else
+			newmap->next = NULL;
+		break;
+	}
+
+	if (line)
+		free(line);
+	fclose(fin);
+	return 0;
+}
+
+#define subuidfile "/etc/subuid"
+#define subgidfile "/etc/subgid"
+static int find_default_map(void)
+{
+	struct passwd *p = getpwuid(getuid());
+	if (!p)
+		return -1;
+	if (read_default_map(subuidfile, 'u', p->pw_name) < 0)
+		return -1;
+	if (read_default_map(subgidfile, 'g', p->pw_name) < 0)
+		return -1;
 }
 
 struct id_map default_map = {
@@ -232,7 +312,7 @@ int main(int argc, char *argv[])
 
 	while ((c = getopt(argc, argv, "m:h")) != EOF) {
 		switch (c) {
-			case 'm': parse_map(optarg); break;
+			case 'm': if (parse_map(optarg)) usage(procname); break;
 			case 'h':
 			default:
 				  usage(procname);
@@ -240,7 +320,10 @@ int main(int argc, char *argv[])
 	};
 
 	if (active_map == &default_map) {
-		find_default_map();
+		if (find_default_map()) {
+			fprintf(stderr, "You have no allocated subuids or subgids\n");
+			exit(1);
+		}
 	}
 
 	argv = &argv[optind];
