@@ -15,8 +15,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sched.h>
 
 #include "clone.h"
+int unshare(int flags);
 
 static const char* procname;
 
@@ -70,12 +72,11 @@ static int do_child(void *vargv)
 		perror("setgid");
 		return -1;
 	}
-	if (setuid(0), < 0) {
+	if (setuid(0) < 0) {
 		perror("setuid");
 		return -1;
 	}
-	ret = unshare(CLONE_NEWNS);
-	if (ret < 0) {
+	if (unshare(CLONE_NEWNS) < 0) {
 		perror("unshare CLONE_NEWNS");
 		return -1;
 	}
@@ -118,17 +119,19 @@ static struct id_map *active_map = &default_map;
 
 static int run_cmd(char **argv)
 {
+    int status;
 	pid_t pid = fork();
+
 	if (pid < 0)
 		return pid;
 	if (pid == 0) {
-		execv(argv[0], argv);
+		execvp(argv[0], argv);
 		perror("exec failed");
 		exit(1);
 	}
-	if ((ret = waitpid(pid, &status, __WALL)) < 0) {
-		printf("waitpid() returns %d, errno %d\n", ret, errno);
-		return ret;
+	if (waitpid(pid, &status, __WALL) < 0) {
+        perror("waitpid");
+		return -1;
 	}
 
 	return WEXITSTATUS(status);
@@ -136,13 +139,13 @@ static int run_cmd(char **argv)
 
 static int map_child_uids(int pid, struct id_map *map)
 {
-	char **uidargs = NULL, gidargs = NULL;
-	int nuargs = 2, ngargs = 2;
+	char **uidargs = NULL, **gidargs = NULL;
+	int i, nuargs = 2, ngargs = 2;
 	struct id_map *m;
 
 	uidargs = malloc(3 * sizeof(*uidargs));
 	gidargs = malloc(3 * sizeof(*gidargs));
-	if (!uidargs || !gidargs)
+	if (uidargs == NULL || gidargs == NULL)
 		return -1;
 	uidargs[0] = malloc(10);
 	gidargs[0] = malloc(10);
@@ -190,12 +193,12 @@ static int map_child_uids(int pid, struct id_map *map)
 	}
 
 	// exec newuidmap
-	if (run_cmd(uidargs) < 0) {
+	if (run_cmd(uidargs) != 0) {
 		fprintf(stderr, "Error mapping uids\n");
 		return -2;
 	}
 	// exec newgidmap
-	if (run_cmd(gidargs) < 0) {
+	if (run_cmd(gidargs) != 0) {
 		fprintf(stderr, "Error mapping gids\n");
 		return -2;
 	}
@@ -206,6 +209,8 @@ static int map_child_uids(int pid, struct id_map *map)
 		free(gidargs[i]);
 	free(uidargs);
 	free(gidargs);
+
+    return 0;
 }
 
 int main(int argc, char *argv[])
