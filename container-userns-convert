@@ -54,8 +54,8 @@ grep -q lxc.uidmap /var/lib/lxc/$container/config && { echo "$container already 
 # give 10000 uids by default
 range=10000
 cat >> /var/lib/lxc/$container/config << EOF
-lxc.id_map = U ${uid} 0 $range
-lxc.id_map = G ${uid} 0 $range
+lxc.id_map = u 0 ${uid} $range
+lxc.id_map = g 0 ${uid} $range
 EOF
 
 uidmapshift -b /var/lib/lxc/$container/rootfs 0 $uid $range
