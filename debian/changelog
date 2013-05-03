@@ -1,3 +1,9 @@
+nsexec (1.20saucy) saucy; urgency=low
+
+  * rebuild for saucy
+
+ -- Serge Hallyn <serge.hallyn@ubuntu.com>  Thu, 02 May 2013 21:19:42 -0500
+
 nsexec (1.20) raring; urgency=low
 
   * update order/format of lxc.id_map entries to  match new upstream lxc
