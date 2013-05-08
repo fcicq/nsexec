@@ -1,3 +1,9 @@
+nsexec (1.21) saucy; urgency=low
+
+  * usernsexec: drop supplemental groups
+
+ -- Serge Hallyn <serge.hallyn@ubuntu.com>  Wed, 08 May 2013 16:46:34 -0500
+
 nsexec (1.20saucy) saucy; urgency=low
 
   * rebuild for saucy

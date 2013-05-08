@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
+#include <grp.h>
 
 int unshare(int flags);
 
@@ -64,7 +65,11 @@ int main(int argc, char *argv[])
 	if (ret < 0)
 		perror("setgid");
 	ret = setuid(0);
+	if (ret < 0)
 		perror("setuid");
+	ret = setgroups(0, NULL);
+	if (ret < 0)
+		perror("setgroups");
 	printf("execing bash (I am  now %d %d)\n", getuid(), getgid());
 	execv(args[0], args);
     exit(1);

@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <grp.h>
 
 #include "clone.h"
 int unshare(int flags);
@@ -206,23 +207,27 @@ int do_child(void *vargv)
 	if (check_newcgrp())
 		return 1;
 
-    if (wait_for_exec) {
-        printf("Press any key to exec (I am %d)\n", getpid());
-        (void)getchar();
-    }
+	if (wait_for_exec) {
+		printf("Press any key to exec (I am %d)\n", getpid());
+		(void)getchar();
+	}
 
-    if (newgid != -1) {
-        if (setgid(newgid) < 0) {
-            perror("setgid");
-            exit(1);
-        }
-    }
-    if (newuid != -1) {
-        if (setuid(newuid) < 0) {
-            perror("setuid");
-            exit(1);
-        }
-    }
+	if (newgid != -1) {
+		if (setgid(newgid) < 0) {
+			perror("setgid");
+			exit(1);
+		}
+		if (setgroups(0, NULL) < 0) {
+			perror("setgroups");
+			return -1;
+		}
+	}
+	if (newuid != -1) {
+		if (setuid(newuid) < 0) {
+			perror("setuid");
+			exit(1);
+		}
+	}
 
 	execve(argv[0], argv, __environ);
 	perror("execve");

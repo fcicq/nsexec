@@ -17,6 +17,7 @@
 #include <sys/wait.h>
 #include <sched.h>
 #include <pwd.h>
+#include <grp.h>
 
 #include "clone.h"
 int unshare(int flags);
@@ -83,6 +84,10 @@ static int do_child(void *vargv)
 	}
 	if (setuid(0) < 0) {
 		perror("setuid");
+		return -1;
+	}
+	if (setgroups(0, NULL) < 0) {
+		perror("setgroups");
 		return -1;
 	}
 	if (unshare(CLONE_NEWNS) < 0) {
