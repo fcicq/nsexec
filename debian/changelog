@@ -1,3 +1,9 @@
+nsexec (1.22) saucy; urgency=low
+
+  * usernsexec: don't run newxidmap if there was no mapping to effect.
+
+ -- Serge Hallyn <serge.hallyn@ubuntu.com>  Tue, 16 Jul 2013 15:01:20 -0500
+
 nsexec (1.21) saucy; urgency=low
 
   * usernsexec: drop supplemental groups

@@ -281,12 +281,12 @@ static int map_child_uids(int pid, struct id_map *map)
 	}
 
 	// exec newuidmap
-	if (run_cmd(uidargs) != 0) {
+	if (nuargs > 2 && run_cmd(uidargs) != 0) {
 		fprintf(stderr, "Error mapping uids\n");
 		return -2;
 	}
 	// exec newgidmap
-	if (run_cmd(gidargs) != 0) {
+	if (ngargs > 2 && run_cmd(gidargs) != 0) {
 		fprintf(stderr, "Error mapping gids\n");
 		return -2;
 	}
